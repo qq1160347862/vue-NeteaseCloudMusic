@@ -30,10 +30,13 @@ export const getMusicList = () => {
     })
 }
 //获取登录状态
-export const getLoginStatus = () => {
+export const getLoginStatus = (cookie = '') => {
     return service({
-        method:"GET",
-        url:"/login/status"
+        method:"POST",
+        url:`/login/status?timestamp=${Date.now()}`,
+        data:{
+            cookie,
+        }
     })
 }
 //登录
@@ -51,6 +54,26 @@ export const getPhoneLogin = (data) => {
         },
 
 
+    })
+}
+// 二维码登陆测试
+export const getQrKey = () =>{
+    return service({
+        method:"GET",
+        url:`/login/qr/key?timestamp=${Date.now()}`
+    })
+}
+
+export const getQr = (key) =>{
+    return service({
+        method:"GET",
+        url:`/login/qr/create?key=${key}&qrimg=true&timestamp=${Date.now()}`
+    })
+}
+export const checkQr = (key) =>{
+    return service({
+        method:"GET",
+        url:`/login/qr/check?key=${key}&timestamp=${Date.now()}`
     })
 }
 //退出登录

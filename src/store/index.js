@@ -1,4 +1,5 @@
 import {createStore} from 'vuex'
+import createPersistedState from "vuex-persistedstate"
 import {getMusicComment, getMusicLyric, getMusicSonComment} from "../request/api/musicList.js";
 import {getPhoneLogin} from "../request/api/home.js";
 import {getAccount, getLevel, getUserMusicList} from "../request/api/local.js";
@@ -131,7 +132,7 @@ export default createStore({
         updateCookies:function (state,value) {
             state.Cookies = value
             localStorage.setItem('cookie',state.Cookies)
-            console.log(state.Cookies)
+            // console.log(state.Cookies)
         },
         deleteCookies:function (state,value) {
             state.Cookies = ''
@@ -416,5 +417,10 @@ export default createStore({
     },
     modules:{
 
-    }
+    },
+    //持久化vuex
+    plugins: [createPersistedState({
+        storage:window.sessionStorage  // 同localStorage相同，只是将vuex的所有值存储到sessionStorage中
+    })]
+
 })

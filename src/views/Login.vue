@@ -1,6 +1,6 @@
 <template>
   <div class="loginContainer" id="loginContainer">
-    <div class="loginArea">
+    <div class="loginArea" v-if="SwitchLoginMethod === 'phone'">
       <div class="Logo"></div>
       <div class="loginTitle"><span>欢迎使用</span></div>
       <el-form :model="form"
@@ -21,9 +21,27 @@
                  placeholder="请输入密码" v-model="form.password">
         </el-form-item>
       </el-form>
+
       <div class="btnArea">
         <button class="btn" @click="Login">登录</button>
         <button @click="$router.push('/home')">立即体验</button>
+      </div>
+      <div class="btnArea">
+        <button class="btn" @click="qrLogin">获取二维码</button>
+      </div>
+      <div class="loadingIcon">
+        <svg class="loading recting" width="40" height="40" viewbox="0 0 40 40">
+          <polygon points="0 0 0 40 40 40 40 0" class="polygon" />
+        </svg>
+      </div>
+    </div>
+    <div class="loginArea" v-else-if="SwitchLoginMethod === 'qr'">
+      <div class="Logo"></div>
+      <div class="loginTitle"><span>欢迎使用</span></div>
+      <img id="qrimg">
+      <div id="qrStatus">二维码状态</div>
+      <div class="btnArea">
+        <button class="btn" @click="changeToPhoneLogin">切换登录</button>
       </div>
       <div class="loadingIcon">
         <svg class="loading recting" width="40" height="40" viewbox="0 0 40 40">
@@ -37,6 +55,51 @@
 
 <script setup>
 
+import {useRouter} from "vue-router/dist/vue-router";
+import {checkQr, getLoginStatus, getQr, getQrKey} from "../request/api/home.js";
+import {ref} from "vue";
+let qrkey
+let timer
+let SwitchLoginMethod = ref('phone')
+const router = useRouter()
+const qrLogin = async () => {
+  SwitchLoginMethod.value = 'qr'
+  let res = await getQrKey()
+  qrkey = res.data.data.unikey
+  let res2 = await getQr(qrkey)
+  document.querySelector('#qrimg').src = res2.data.data.qrimg
+  timer = setInterval(async () => {
+    let qrStatus = await checkQr(qrkey)
+    if (qrStatus.data.code === 800){
+      // message:"二维码不存在或已过期"
+      clearInterval(timer)
+    }
+    else if (qrStatus.data.code === 801){
+      document.querySelector('#qrStatus').innerText = '等待扫码'
+    }
+    else if (qrStatus.data.code === 802){
+      // message:"授权中"
+      // nickname:"XXX"
+      document.querySelector('#qrStatus').innerText = '等待确定'
+    }
+    else if (qrStatus.data.code === 803){
+      // message :"授权登陆成功"
+      clearInterval(timer)
+      document.querySelector('#qrStatus').innerText = '登陆成功'
+      store.commit('updateCookies',qrStatus.data.cookie)
+      store.commit('updateIsLogin',true)
+      let info = await getLoginStatus(qrStatus.data.cookie)
+      store.commit('updateUserInfos',info.data.data.profile)
+      // console.log(info)
+      // console.log(info.data.data.profile)
+      await router.push('/home')
+    }
+  }, 3000)
+}
+const changeToPhoneLogin = () => {
+  SwitchLoginMethod.value = 'phone'
+  clearInterval(timer)
+}
 </script>
 <script>
 import store from '../store/index.js'
@@ -155,6 +218,11 @@ export default {
 .loginArea>>>.el-form-item__error{
   font-weight: bold;
 }
+
+.btnArea {
+  margin-top: 16px;
+}
+
 .loadingIcon {
   position: absolute;
   top: 11.9%;
